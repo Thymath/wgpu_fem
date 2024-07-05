@@ -3,18 +3,16 @@ use winit::event::WindowEvent;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::{Window, WindowId};
 
+use crate::state_wgpu::State;
+
 #[derive(Default)]
-pub struct App {
-    window: Option<Window>,
+pub struct App<'a> {
+    state: Option<State<'a>>,
 }
 
-impl ApplicationHandler for App {
+impl<'a> ApplicationHandler for App<'a> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        self.window = Some(
-            event_loop
-                .create_window(Window::default_attributes())
-                .unwrap(),
-        );
+        self.state = Some(pollster::block_on(State::new(event_loop)));
     }
 
     fn window_event(
@@ -29,7 +27,7 @@ impl ApplicationHandler for App {
                 event_loop.exit();
             }
             WindowEvent::RedrawRequested => {
-                self.window.as_ref().unwrap().request_redraw();
+                self.state.as_ref().unwrap().window.request_redraw();
             }
             _ => (),
         }
