@@ -1,4 +1,4 @@
-use std::env::current_dir;
+use crate::pipeline_builder::PipelineBuilder;
 use winit::dpi::PhysicalSize;
 
 #[derive(Debug)]
@@ -72,64 +72,10 @@ impl<'a> State<'a> {
 
         surface.configure(&device, &config);
 
-        let mut filepath = current_dir().unwrap();
-        filepath.push("src/");
-        filepath.push("shader.wgsl");
-        let filepath = filepath.into_os_string().into_string().unwrap();
-        let source_code = std::fs::read_to_string(filepath).expect("Can't read source file");
-        let shader_module_descriptor = wgpu::ShaderModuleDescriptor {
-            label: Some("Shader module"),
-            source: wgpu::ShaderSource::Wgsl(source_code.into()),
-        };
-        let shader = device.create_shader_module(shader_module_descriptor);
-
-        let pipeline_layout_descriptor = wgpu::PipelineLayoutDescriptor {
-            label: Some("Pipeline Layout"),
-            bind_group_layouts: &[],
-            push_constant_ranges: &[],
-        };
-        let pipeline_layout = device.create_pipeline_layout(&pipeline_layout_descriptor);
-
-        let render_targets = [Some(wgpu::ColorTargetState {
-            format: config.format,
-            blend: Some(wgpu::BlendState::REPLACE),
-            write_mask: wgpu::ColorWrites::ALL,
-        })];
-
-        let pipeline_compilation_options = wgpu::PipelineCompilationOptions::default();
-        let render_pipeline_descriptor = wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[],
-                compilation_options: pipeline_compilation_options.clone(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                targets: &render_targets,
-                compilation_options: pipeline_compilation_options,
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-        };
-        let render_pipeline = device.create_render_pipeline(&render_pipeline_descriptor);
+        let mut pipeline_builder = PipelineBuilder::new();
+        pipeline_builder.set_shader_module("shaders/shader.wgsl", "vs_main", "fs_main");
+        pipeline_builder.set_pixel_format(config.format);
+        let render_pipeline = pipeline_builder.build_pipeline(&device);
 
         Self {
             instance,

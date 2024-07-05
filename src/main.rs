@@ -1,3 +1,4 @@
+mod pipeline_builder;
 mod state_wgpu;
 mod window;
 
